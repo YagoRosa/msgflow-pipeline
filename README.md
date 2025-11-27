@@ -1,102 +1,61 @@
-Descrição
-Este bot tem como objetivo automatizar o envio de mensagens para um grupo de usuários através do WhatsApp. O bot utiliza o whatsapp-web.js para interagir com o WhatsApp Web e oferece um menu administrativo onde o usuário pode escolher diferentes opções para enviar mensagens específicas. Ele é útil para automação de processos administrativos e interações com um grupo de pessoas de forma eficiente.
+# Bot Automessage — Nova Arquitetura Integrada com Pipeline de Dados 🤖
 
-Tecnologias
-O projeto utiliza as seguintes tecnologias:
+Este projeto está passando por uma evolução estrutural para operar como um pipeline completo de chamadas cirúrgicas, unificando automação via WhatsApp, ingestão de dados em SQL Server e camada analítica em Power BI.
+O objetivo é garantir eficiência operacional, rastreabilidade e governança dos dados, sem comprometer o SLA do chamado e mantendo conformidade com a LGPD.
 
-Node.js (v12 ou superior)
+# 🎯 Objetivo
 
-whatsapp-web.js - Para interação com o WhatsApp Web
+Automatizar o envio de chamadas cirúrgicas via WhatsApp e, em paralelo, registrar os dados operacionais em um banco SQL Server para análises posteriores.
+O fluxo é desenhado para que o envio das mensagens seja sempre prioridade — caso o bulk insert falhe, o chamado não é impactado.
 
-qrcode-terminal - Para exibição do QR Code no terminal
+# 🧩 Arquitetura do Processo
 
-XLSX - Para manipulação de arquivos XLSX (caso necessário)
+Modelo da planilha aonde é realizado o chamado, o operador alimenta todos os campos listados na imagem abaixo. 
 
-Dependências
-Você pode instalar as dependências utilizando o npm:
+<img width="1079" height="121" alt="image" src="https://github.com/user-attachments/assets/0c5b4055-6df4-4889-843a-da040f7e7990" />
 
-bash
-Copiar
-Editar
-npm install
-Instalação
-1. Clonar o repositório
-Clone o repositório para sua máquina local:
 
-bash
-Copiar
-Editar
-git clone https://github.com/seu-usuario/whatsapp-bot-administrativo.git
-cd whatsapp-bot-administrativo
-2. Instalar as dependências
-Instale todas as dependências necessárias utilizando o npm:
 
-bash
-Copiar
-Editar
-npm install
-3. Configurar o ambiente
-Este bot funciona com o WhatsApp Web, então você precisará escanear um QR Code para conectar a sua conta do WhatsApp. Ao executar o bot pela primeira vez, o código gerará um QR Code no terminal para que você faça a leitura com o seu celular.
+O texto final da mensagem é gerado via CONCAT direto na planilha, garantindo padronização.
+Apos garantir que todas as informações estejam corretas, o operador ira via VSCODE executar o codigo do bot para que seja gerado o QRCode aonde sera escaneado pelo celular operacional do setor responsavel pelo chamado.
 
-4. Iniciar o bot
-Para iniciar o bot, basta executar o seguinte comando:
+Utilizando a bliblioteca whatsapp-web.js para integrar o codigo com o WhatsApp possibilitando o envio das mensagens, após a conexão o operador envia a palavra-chave para ativar o bot que solicitara uma validação, apos validado o bot irá disponibilizar o menu de função. A função desenvolvida dispara uma mensagem personalizada por paciente.
 
-bash
-Copiar
-Editar
-node index.js
-Isso inicializará o bot e, ao escanear o QR Code, o bot estará pronto para enviar mensagens conforme as opções selecionadas no menu.
+Exemplo de texto utilizado:
 
-Como usar
-O bot interage com o usuário de forma simples. Após a inicialização, o bot ficará aguardando mensagens do usuário no WhatsApp. O fluxo básico é o seguinte:
+<img width="267" height="224" alt="image" src="https://github.com/user-attachments/assets/1626cc04-05b0-40c4-ae73-53d36617829e" />
 
-O usuário envia a mensagem "menu administrativo" para o bot.
+O bot processa a planilha de forma sequencial, linha a linha, capturando exclusivamente o número de telefone e o texto final a ser enviado ao paciente. A coluna TEXTO_PARA_ENVIAR é totalmente construída via CONCAT na própria planilha, incorporando procedimento, horário e demais parâmetros operacionais. Isso elimina a necessidade de o bot manter constantes internas para montar mensagens, simplifica manutenção, reduz acoplamento e facilita ajustes futuros de conteúdo sem intervenção no código.
 
-O bot responde pedindo a matrícula do usuário.
 
-O usuário envia a matrícula. Se a matrícula for válida (por exemplo, "n1164193"), o bot exibirá um menu com opções.
+# Sincronização com SQL Server (Pipeline de Dados)
 
-O usuário escolhe uma opção (1 a 5) e o bot executa a ação correspondente, como enviar mensagens de absenteísmo, internação, exames, etc.
+Após finalizar o disparo das mensagens, o bot aciona um processo de bulk insert em Python, responsável por registrar toda a telemetria operacional do fluxo, incluindo:
 
-Comandos disponíveis no menu:
-1: Enviar mensagem de absenteísmo
+- Metadados do chamado (data do acionamento, horário exato do disparo).
+- Indicadores operacionais relevantes para auditoria..
+- Histórico completo de envios, garantindo rastreabilidade ponta-a-ponta
 
-2: Enviar mensagem de internação
+Todo o material sensível permanece integralmente armazenado no SQL Server local, assegurando aderência plena aos requisitos da LGPD e evitando qualquer exposição externa.
 
-3: Enviar mensagem de consulta de colonoscopia
 
-4: Enviar mensagem de exame de endoscopia
+# 📊 Camada de Inteligência — Dashboard Power BI
 
-5: Enviar mensagem de exame de colonoscopia
+Com a base alimentada pelo SQL Server, a dashboard em Power BI entrega uma visão consolidada dos indicadores assistenciais e de performance do processo:
 
-Comandos
-Menu Administrativo
-O bot começa perguntando pela matrícula do usuário e, ao receber a matrícula correta, ele exibe um menu com as seguintes opções:
+- KPIs de fluxo
+- Tendências operacionais
+- Eficiência do chamado cirúrgico
+- Gargalos e oportunidades de melhoria
 
-1: Enviar mensagem de absenteísmo
+A modelagem garante que nenhum dado pessoal identificável seja exibido, operando somente com métricas agregadas e seguras para uso gerencial.
 
-2: Enviar mensagem de internação
 
-3: Enviar mensagem de consulta de colonoscopia
+# 📦 Tecnologias Utilizadas
 
-4: Enviar mensagem de exame de endoscopia
-
-5: Enviar mensagem de exame de colonoscopia
-
-Cada uma dessas opções chama uma função específica (como sendMessagesAbsenteismo, sendMessagesInterncao, etc.) para enviar uma mensagem relacionada ao respectivo tópico.
-
-Funções
-As funções de envio de mensagens são implementadas no arquivo index.js e podem ser personalizadas de acordo com as necessidades do projeto. Elas são chamadas após o usuário escolher uma opção no menu.
-
-Contribuindo
-Contribuições são bem-vindas! Para contribuir com o projeto:
-
-Faça um fork do repositório.
-
-Crie uma nova branch para sua feature (git checkout -b feature/nova-feature).
-
-Faça as alterações necessárias e commite-as (git commit -am 'Adiciona nova feature').
-
-Envie para o seu fork (git push origin feature/nova-feature).
-
-Crie um pull request.
+- Node.js
+- whatsapp-web.js
+- Python (bulk insert)
+- SQL Server (local)
+- Power BI Desktop
+- XLSX para ingestão da planilha
